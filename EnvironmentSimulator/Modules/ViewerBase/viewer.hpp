@@ -637,7 +637,9 @@ namespace viewer
                                                    double                         refpoint_x_offset,
                                                    double                         modlel_x_offset,
                                                    const std::vector<SE_Point2D>* outline,
-                                                   EntityScaleMode                scaleMode = EntityScaleMode::NONE);
+                                                   EntityScaleMode                scaleMode  = EntityScaleMode::NONE,
+                                                   std::string                    bb_color   = "",
+                                                   bool                           is_trailer = false);
         int                      AddEntityModel(EntityModel* model);
         void                     RemoveCar(int index);
         void                     RemoveCar(std::string name);
@@ -689,6 +691,10 @@ namespace viewer
         {
             return quit_request_;
         }
+        void SetHideVehicleModels(bool val)
+        {
+            hide_vehicle_models_ = val;
+        }
         void         SetInfoText(const char* text);
         void         SetNodeMaskBits(int bits);
         void         SetNodeMaskBits(int mask, int bits);
@@ -731,6 +737,10 @@ namespace viewer
         void   CycleAxisIndicatorMode();
         void   CreateFog(const double range, const double sunIntensityFactor, const double cloudinessFactor);
         void   SetSkyColor(const double sunIntensityFactor, const double fogVisualRangeFactor, const double cloudinessFactor);
+        bool   GetUseStandinModel() const
+        {
+            return use_standin_model_;
+        }
 
     private:
         int        CreateTunnels(roadmanager::OpenDrive* od);
@@ -762,6 +772,8 @@ namespace viewer
         std::vector<float>                    fogColor_;
         osg::StateSet*                        axis_indicator_stateset_;
         int                                   axis_indicator_mode_ = 0;
+        bool                                  hide_vehicle_models_;
+        bool                                  use_standin_model_ = false;
 
         struct
         {
