@@ -17,6 +17,7 @@
 #include <osg/LineWidth>
 #include <osg/BlendColor>
 #include <osg/Depth>
+#include <osg/Stencil>
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/CullFace>
@@ -1563,6 +1564,7 @@ int Viewer::InitTraits(osg::ref_ptr<osg::GraphicsContext::Traits> traits,
     traits->y             = y;
     traits->width         = w;
     traits->height        = h;
+    traits->stencil       = 8;
     traits->samples       = static_cast<unsigned int>(samples);
     traits->sampleBuffers = (traits->samples > 0) ? 1 : 0;
     traits->sharedContext = 0;
@@ -1715,7 +1717,7 @@ Viewer::Viewer(roadmanager::OpenDrive* odrManager,
     osg::ref_ptr<osg::Camera> camera = osgViewer_->getCamera();
 
     camera->setGraphicsContext(gc);
-    camera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    camera->setClearMask(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     if (!clear_color)
     {
         // Default background color
@@ -2893,6 +2895,13 @@ osg::ref_ptr<osg::Node> Viewer::CreateShadow(double bb_x, double bb_y, double bb
     osg::ref_ptr<osg::Depth> depth = new osg::Depth;
     depth->setWriteMask(false);
     shadowStateSet->setAttributeAndModes(depth, osg::StateAttribute::ON);
+
+    osg::ref_ptr<osg::Stencil> stencil = new osg::Stencil;
+    stencil->setFunction(osg::Stencil::NOTEQUAL, 1, 0xFF);
+    stencil->setOperation(osg::Stencil::KEEP, osg::Stencil::KEEP, osg::Stencil::REPLACE);
+    stencil->setWriteMask(0xFF);
+    shadowStateSet->setAttributeAndModes(stencil, osg::StateAttribute::ON);
+    shadowStateSet->setMode(GL_STENCIL_TEST, osg::StateAttribute::ON);
 
     osg::ref_ptr<osg::PositionAttitudeTransform> pat = new osg::PositionAttitudeTransform;
     pat->addChild(geode.get());
