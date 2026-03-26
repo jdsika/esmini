@@ -2373,6 +2373,7 @@ EntityModel* Viewer::CreateEntityModel(std::string                    modelFilep
     osg::ref_ptr<osg::Group>                     bbGroup           = nullptr;
     osg::ref_ptr<osg::PositionAttitudeTransform> txVehicleDynamics = new osg::PositionAttitudeTransform;
     osg::BoundingBox                             modelBB;
+    osg::BoundingBox                             scaledBB;
     double                                       carStdDim[]  = {4.5, 1.8, 1.5};
     double                                       carStdOrig[] = {1.5, 0.0, 0.75};
     osg::Vec3d                                   bbCenter(carStdOrig[0], carStdOrig[1], carStdOrig[2]);
@@ -2598,6 +2599,12 @@ EntityModel* Viewer::CreateEntityModel(std::string                    modelFilep
                                         boundingBox->center_.y_ - sy * static_cast<double>(modelBB.center().y()),
                                         boundingBox->center_.z_ - sz * static_cast<double>(modelBB.center().z())));
         modeltx->setScale(osg::Vec3d(sx, sy, sz));
+
+        osg::Matrix scaleMatrix = osg::Matrix::scale(sx, sy, sz);
+        for (unsigned int i = 0; i < 8; ++i)
+        {
+            scaledBB.expandBy(modelBB.corner(i) * scaleMatrix);
+        }
     }
 
     // Put transform node under modelgroup
@@ -2626,9 +2633,15 @@ EntityModel* Viewer::CreateEntityModel(std::string                    modelFilep
         zOffset = 0.01;
     }
 
-    float  dx     = modelBB._max.x() - modelBB._min.x();
-    float  dy     = modelBB._max.y() - modelBB._min.y();
-    float  dz     = modelBB._max.z() - modelBB._min.z();
+    osg::BoundingBox tempModelBB = modelBB;
+    if (scaleMode == EntityScaleMode::MODEL_TO_BB)
+    {
+        tempModelBB = scaledBB;
+    }
+
+    float  dx     = tempModelBB._max.x() - tempModelBB._min.x();
+    float  dy     = tempModelBB._max.y() - tempModelBB._min.y();
+    float  dz     = tempModelBB._max.z() - tempModelBB._min.z();
     float  xc     = (modelBB._max.x() + modelBB._min.x()) / 2.0f;
     float  yc     = (modelBB._max.y() + modelBB._min.y()) / 2.0f;
     double bbMinZ = bbCenter.z() - bbDimensions.z() / 2.0;
@@ -2636,11 +2649,9 @@ EntityModel* Viewer::CreateEntityModel(std::string                    modelFilep
     shadow_node_model                         = CreateShadow(dx, dy, dz);
     osg::PositionAttitudeTransform* pat_model = static_cast<osg::PositionAttitudeTransform*>(shadow_node_model.get());
     pat_model->setName("shadow_tx_model");
-    pat_model->setPosition(osg::Vec3d(xc, yc, zOffset + modelBB._min.z()));
+    pat_model->setPosition(osg::Vec3d(xc, yc, zOffset + tempModelBB._min.z()));
     pat_model->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
     pat_model->setNodeMask(NodeMask::NODE_MASK_ENTITY_MODEL);
-
-    modeltx->addChild(shadow_node_model);
 
     shadow_node_filled_bb                         = CreateShadow(bbDimensions.x(), bbDimensions.y(), bbDimensions.z());
     osg::PositionAttitudeTransform* pat_filled_bb = static_cast<osg::PositionAttitudeTransform*>(shadow_node_filled_bb.get());
@@ -2672,11 +2683,9 @@ EntityModel* Viewer::CreateEntityModel(std::string                    modelFilep
     bbGroup->setName("BoundingBox");
 
     group->addChild(modeltx);
+    group->addChild(pat_model);
     group->addChild(bbGroup);
-    if (shadow_node_filled_bb)
-    {
-        group->addChild(pat_filled_bb);
-    }
+    group->addChild(pat_filled_bb);
     group->setName(name);
 
     EntityModel* emodel;
