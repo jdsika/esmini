@@ -16,6 +16,7 @@
 #include <osg/ComputeBoundsVisitor>
 #include <osg/LineWidth>
 #include <osg/BlendColor>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/CullFace>
@@ -2883,6 +2884,15 @@ osg::ref_ptr<osg::Node> Viewer::CreateShadow(double bb_x, double bb_y, double bb
 
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     geode->addDrawable(geometry.get());
+
+    osg::StateSet* shadowStateSet = geode->getOrCreateStateSet();
+    shadowStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+    shadowStateSet->setAttributeAndModes(new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    shadowStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+    osg::ref_ptr<osg::Depth> depth = new osg::Depth;
+    depth->setWriteMask(false);
+    shadowStateSet->setAttributeAndModes(depth, osg::StateAttribute::ON);
 
     osg::ref_ptr<osg::PositionAttitudeTransform> pat = new osg::PositionAttitudeTransform;
     pat->addChild(geode.get());
